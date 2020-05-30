@@ -55,7 +55,8 @@ func resourceGitlabGroupLdapLink() *schema.Resource {
 }
 
 func resourceGitlabGroupLdapLinkCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	groupId := d.Get("group_id").(string)
 	cn := d.Get("cn").(string)
@@ -85,7 +86,8 @@ func resourceGitlabGroupLdapLinkCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabGroupLdapLinkRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	groupId := d.Get("group_id").(string)
 
 	// Try to fetch all group links from GitLab
@@ -131,7 +133,8 @@ func resourceGitlabGroupLdapLinkRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabGroupLdapLinkDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	groupId := d.Get("group_id").(string)
 	cn := d.Get("cn").(string)
 	ldap_provider := d.Get("ldap_provider").(string)

@@ -3,6 +3,7 @@ package gitlab
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -61,7 +62,8 @@ func resourceGitlabProjectPushRules() *schema.Resource {
 	}
 }
 func resourceGitlabProjectPushRulesUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.EditProjectPushRuleOptions{
 		CommitMessageRegex: gitlab.String(d.Get("commit_message_regex").(string)),
@@ -82,7 +84,8 @@ func resourceGitlabProjectPushRulesUpdate(d *schema.ResourceData, meta interface
 }
 
 func resourceGitlabProjectPushRulesCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.AddProjectPushRuleOptions{
 		CommitMessageRegex: gitlab.String(d.Get("commit_message_regex").(string)),
@@ -105,11 +108,17 @@ func resourceGitlabProjectPushRulesCreate(d *schema.ResourceData, meta interface
 }
 
 func resourceGitlabProjectPushRulesRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	log.Printf("[DEBUG] read gitlab project %s", project)
 	pushRules, _, err := client.Projects.GetProjectPushRules(project)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab project push rules not found %s", project)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 	d.Set("commit_message_regex", pushRules.CommitMessageRegex)
@@ -124,7 +133,8 @@ func resourceGitlabProjectPushRulesRead(d *schema.ResourceData, meta interface{}
 }
 
 func resourceGitlabProjectPushRulesDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	log.Printf("[DEBUG] Delete gitlab project push rules %s", project)
 	log.Println(project)

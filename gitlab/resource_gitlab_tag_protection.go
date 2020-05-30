@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -39,7 +40,8 @@ func resourceGitlabTagProtection() *schema.Resource {
 }
 
 func resourceGitlabTagProtectionCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	tag := gitlab.String(d.Get("tag").(string))
 	createAccessLevel := accessLevelID[d.Get("create_access_level").(string)]
@@ -71,7 +73,8 @@ func resourceGitlabTagProtectionCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabTagProtectionRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project, tag, err := projectAndTagFromID(d.Id())
 	if err != nil {
 		return err
@@ -81,6 +84,11 @@ func resourceGitlabTagProtectionRead(d *schema.ResourceData, meta interface{}) e
 
 	pt, _, err := client.ProtectedTags.GetProtectedTag(project, tag)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab tag protection not found %s/%s", project, tag)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -94,7 +102,8 @@ func resourceGitlabTagProtectionRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabTagProtectionDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	tag := d.Get("tag").(string)
 

@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -60,7 +61,8 @@ func resourceGitlabProjectVariable() *schema.Resource {
 }
 
 func resourceGitlabProjectVariableCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project := d.Get("project").(string)
 	key := d.Get("key").(string)
@@ -91,7 +93,8 @@ func resourceGitlabProjectVariableCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabProjectVariableRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project, key, err := parseTwoPartID(d.Id())
 	if err != nil {
@@ -102,6 +105,11 @@ func resourceGitlabProjectVariableRead(d *schema.ResourceData, meta interface{})
 
 	v, _, err := client.ProjectVariables.GetVariable(project, key)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab project variable not found %s/%s", project, key)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -119,7 +127,8 @@ func resourceGitlabProjectVariableRead(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabProjectVariableUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project := d.Get("project").(string)
 	key := d.Get("key").(string)
@@ -147,7 +156,8 @@ func resourceGitlabProjectVariableUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabProjectVariableDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	key := d.Get("key").(string)
 	log.Printf("[DEBUG] Delete gitlab project variable %s/%s", project, key)

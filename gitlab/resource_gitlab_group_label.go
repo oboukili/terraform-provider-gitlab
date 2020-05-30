@@ -37,7 +37,8 @@ func resourceGitlabGroupLabel() *schema.Resource {
 }
 
 func resourceGitlabGroupLabelCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group := d.Get("group").(string)
 	options := &gitlab.CreateGroupLabelOptions{
 		Name:  gitlab.String(d.Get("name").(string)),
@@ -61,7 +62,8 @@ func resourceGitlabGroupLabelCreate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceGitlabGroupLabelRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group := d.Get("group").(string)
 	labelName := d.Id()
 	log.Printf("[DEBUG] read gitlab group label %s/%s", group, labelName)
@@ -91,7 +93,8 @@ func resourceGitlabGroupLabelRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceGitlabGroupLabelUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group := d.Get("group").(string)
 	options := &gitlab.UpdateGroupLabelOptions{
 		Name:  gitlab.String(d.Get("name").(string)),
@@ -113,7 +116,8 @@ func resourceGitlabGroupLabelUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceGitlabGroupLabelDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group := d.Get("group").(string)
 	log.Printf("[DEBUG] Delete gitlab group label %s", d.Id())
 	options := &gitlab.DeleteGroupLabelOptions{

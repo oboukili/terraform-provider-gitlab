@@ -80,7 +80,8 @@ func resourceGitlabGroup() *schema.Resource {
 }
 
 func resourceGitlabGroupCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	options := &gitlab.CreateGroupOptions{
 		Name:                 gitlab.String(d.Get("name").(string)),
 		LFSEnabled:           gitlab.Bool(d.Get("lfs_enabled").(bool)),
@@ -116,7 +117,8 @@ func resourceGitlabGroupCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabGroupRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	log.Printf("[DEBUG] read gitlab group %s", d.Id())
 
 	group, resp, err := client.Groups.GetGroup(d.Id())
@@ -151,7 +153,8 @@ func resourceGitlabGroupRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	options := &gitlab.UpdateGroupOptions{}
 
@@ -192,7 +195,8 @@ func resourceGitlabGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabGroupDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	log.Printf("[DEBUG] Delete gitlab group %s", d.Id())
 
 	_, err := client.Groups.DeleteGroup(d.Id())

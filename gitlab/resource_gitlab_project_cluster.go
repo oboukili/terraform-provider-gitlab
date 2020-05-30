@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -96,7 +97,8 @@ func resourceGitlabProjectCluster() *schema.Resource {
 }
 
 func resourceGitlabProjectClusterCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 
 	pk := gitlab.AddPlatformKubernetesOptions{
@@ -146,7 +148,8 @@ func resourceGitlabProjectClusterCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceGitlabProjectClusterRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project, clusterId, err := projectIdAndClusterIdFromId(d.Id())
 	if err != nil {
@@ -157,6 +160,11 @@ func resourceGitlabProjectClusterRead(d *schema.ResourceData, meta interface{}) 
 
 	cluster, _, err := client.ProjectCluster.GetCluster(project, clusterId)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab project cluster not found %s/%d", project, clusterId)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -178,7 +186,8 @@ func resourceGitlabProjectClusterRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceGitlabProjectClusterUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project, clusterId, err := projectIdAndClusterIdFromId(d.Id())
 	if err != nil {
@@ -233,7 +242,8 @@ func resourceGitlabProjectClusterUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceGitlabProjectClusterDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project, clusterId, err := projectIdAndClusterIdFromId(d.Id())
 	if err != nil {
 		return err

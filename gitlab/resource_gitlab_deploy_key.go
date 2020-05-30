@@ -49,7 +49,8 @@ func resourceGitlabDeployKey() *schema.Resource {
 }
 
 func resourceGitlabDeployKeyCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.AddDeployKeyOptions{
 		Title:   gitlab.String(d.Get("title").(string)),
@@ -70,7 +71,8 @@ func resourceGitlabDeployKeyCreate(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceGitlabDeployKeyRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	deployKeyID, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -80,6 +82,11 @@ func resourceGitlabDeployKeyRead(d *schema.ResourceData, meta interface{}) error
 
 	deployKey, _, err := client.DeployKeys.GetDeployKey(project, deployKeyID)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab deploy key not found %s/%d", project, deployKeyID)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -90,7 +97,8 @@ func resourceGitlabDeployKeyRead(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceGitlabDeployKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	deployKeyID, err := strconv.Atoi(d.Id())
 	if err != nil {

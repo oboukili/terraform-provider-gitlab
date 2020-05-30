@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -55,7 +56,8 @@ func resourceGitlabGroupVariable() *schema.Resource {
 }
 
 func resourceGitlabGroupVariableCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	group := d.Get("group").(string)
 	key := d.Get("key").(string)
@@ -84,7 +86,8 @@ func resourceGitlabGroupVariableCreate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabGroupVariableRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	group, key, err := parseTwoPartID(d.Id())
 	if err != nil {
@@ -95,6 +98,11 @@ func resourceGitlabGroupVariableRead(d *schema.ResourceData, meta interface{}) e
 
 	v, _, err := client.GroupVariables.GetVariable(group, key)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab group variable not found %s/%s", group, key)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -108,7 +116,8 @@ func resourceGitlabGroupVariableRead(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabGroupVariableUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	group := d.Get("group").(string)
 	key := d.Get("key").(string)
@@ -133,7 +142,8 @@ func resourceGitlabGroupVariableUpdate(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabGroupVariableDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group := d.Get("group").(string)
 	key := d.Get("key").(string)
 	log.Printf("[DEBUG] Delete gitlab group variable %s/%s", group, key)

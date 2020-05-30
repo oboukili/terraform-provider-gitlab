@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -50,7 +49,8 @@ func resourceGitlabPipelineSchedule() *schema.Resource {
 }
 
 func resourceGitlabPipelineScheduleCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.CreatePipelineScheduleOptions{
 		Description:  gitlab.String(d.Get("description").(string)),
@@ -73,7 +73,8 @@ func resourceGitlabPipelineScheduleCreate(d *schema.ResourceData, meta interface
 }
 
 func resourceGitlabPipelineScheduleRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	pipelineScheduleID, err := strconv.Atoi(d.Id())
 
@@ -100,14 +101,17 @@ func resourceGitlabPipelineScheduleRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 	if !found {
-		return errors.New(fmt.Sprintf("PipelineSchedule %d no longer exists in gitlab", pipelineScheduleID))
+		log.Printf("[DEBUG] PipelineSchedule %d no longer exists in gitlab", pipelineScheduleID)
+		d.SetId("")
+		return nil
 	}
 
 	return nil
 }
 
 func resourceGitlabPipelineScheduleUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.EditPipelineScheduleOptions{
 		Description:  gitlab.String(d.Get("description").(string)),
@@ -154,7 +158,8 @@ func resourceGitlabPipelineScheduleUpdate(d *schema.ResourceData, meta interface
 }
 
 func resourceGitlabPipelineScheduleDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	log.Printf("[DEBUG] Delete gitlab PipelineSchedule %s", d.Id())
 

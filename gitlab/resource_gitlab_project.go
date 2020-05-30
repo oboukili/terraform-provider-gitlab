@@ -235,7 +235,8 @@ func resourceGitlabProjectSetToState(d *schema.ResourceData, project *gitlab.Pro
 }
 
 func resourceGitlabProjectCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	options := &gitlab.CreateProjectOptions{
 		Name:                             gitlab.String(d.Get("name").(string)),
@@ -345,7 +346,8 @@ func resourceGitlabProjectCreate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceGitlabProjectRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	log.Printf("[DEBUG] read gitlab project %s", d.Id())
 
 	project, _, err := client.Projects.GetProject(d.Id(), nil)
@@ -363,7 +365,8 @@ func resourceGitlabProjectRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabProjectUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	options := &gitlab.EditProjectOptions{}
 	transferOptions := &gitlab.TransferProjectOptions{}
@@ -527,7 +530,8 @@ func resourceGitlabProjectUpdate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceGitlabProjectDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	log.Printf("[DEBUG] Delete gitlab project %s", d.Id())
 
 	_, err := client.Projects.DeleteProject(d.Id())
@@ -632,7 +636,8 @@ func getGroupsProjectSharedWith(project *gitlab.Project) []*gitlab.ShareWithGrou
 }
 
 func updateSharedWithGroups(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	var groupsToUnshare []*gitlab.ShareWithGroupOptions
 	var groupsToShare []*gitlab.ShareWithGroupOptions
@@ -691,7 +696,8 @@ func updateSharedWithGroups(d *schema.ResourceData, meta interface{}) error {
 // idempotent).
 func archiveProject(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[TRACE] Project (%s) will be archived", d.Id())
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	out, _, err := client.Projects.ArchiveProject(d.Id())
 	if err != nil {
 		log.Printf("[ERROR] Error archiving project (%s), received %#v", d.Id(), err)
@@ -710,7 +716,8 @@ func archiveProject(d *schema.ResourceData, meta interface{}) error {
 // idempotent).
 func unarchiveProject(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] Project (%s) will be unarchived", d.Id())
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	out, _, err := client.Projects.UnarchiveProject(d.Id())
 	if err != nil {
 		log.Printf("[ERROR] Error unarchiving project (%s), received %#v", d.Id(), err)

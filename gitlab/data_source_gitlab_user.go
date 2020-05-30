@@ -137,7 +137,8 @@ func dataSourceGitlabUser() *schema.Resource {
 }
 
 func dataSourceGitlabUserRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	var user *gitlab.User
 	var err error

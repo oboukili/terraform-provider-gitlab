@@ -174,7 +174,8 @@ func dataSourceGitlabUsers() *schema.Resource {
 }
 
 func dataSourceGitlabUsersRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	listUsersOptions, id, err := expandGitlabUsersOptions(d)
 	if err != nil {

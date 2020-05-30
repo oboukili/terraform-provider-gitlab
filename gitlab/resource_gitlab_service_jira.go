@@ -3,6 +3,7 @@ package gitlab
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -83,7 +84,8 @@ func resourceGitlabServiceJira() *schema.Resource {
 }
 
 func resourceGitlabServiceJiraCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project := d.Get("project").(string)
 
@@ -105,13 +107,19 @@ func resourceGitlabServiceJiraCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabServiceJiraRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 
 	log.Printf("[DEBUG] Read Gitlab Jira service %s", d.Id())
 
 	jiraService, _, err := client.Services.GetJiraService(project)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab jira service not found %s", project)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -150,7 +158,8 @@ func resourceGitlabServiceJiraUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabServiceJiraDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	project := d.Get("project").(string)
 

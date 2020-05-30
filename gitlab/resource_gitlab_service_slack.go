@@ -3,6 +3,7 @@ package gitlab
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -170,7 +171,8 @@ func resourceGitlabServiceSlackSetToState(d *schema.ResourceData, service *gitla
 }
 
 func resourceGitlabServiceSlackCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 
 	log.Printf("[DEBUG] create gitlab slack service for project %s", project)
@@ -210,13 +212,19 @@ func resourceGitlabServiceSlackCreate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceGitlabServiceSlackRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 
 	log.Printf("[DEBUG] read gitlab slack service for project %s", project)
 
 	service, _, err := client.Services.GetSlackService(project)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab slack service not found %s", project)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -230,7 +238,8 @@ func resourceGitlabServiceSlackUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceGitlabServiceSlackDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 
 	log.Printf("[DEBUG] delete gitlab slack service for project %s", project)

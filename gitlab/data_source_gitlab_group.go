@@ -74,7 +74,8 @@ func dataSourceGitlabGroup() *schema.Resource {
 }
 
 func dataSourceGitlabGroupRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	var group *gitlab.Group
 	var err error

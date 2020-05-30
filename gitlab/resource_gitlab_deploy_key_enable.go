@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	gitlab "github.com/xanzy/go-gitlab"
 )
 
 func resourceGitlabDeployEnableKey() *schema.Resource {
@@ -50,7 +49,8 @@ func resourceGitlabDeployEnableKey() *schema.Resource {
 }
 
 func resourceGitlabDeployKeyEnableCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	key_id, err := strconv.Atoi(d.Get("key_id").(string))
 
@@ -67,7 +67,8 @@ func resourceGitlabDeployKeyEnableCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabDeployKeyEnableRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	deployKeyID, err := strconv.Atoi(d.Get("key_id").(string))
 	if err != nil {
@@ -77,6 +78,11 @@ func resourceGitlabDeployKeyEnableRead(d *schema.ResourceData, meta interface{})
 
 	deployKey, _, err := client.DeployKeys.GetDeployKey(project, deployKeyID)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab deploy key not found %s/%d", project, deployKeyID)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -89,7 +95,8 @@ func resourceGitlabDeployKeyEnableRead(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabDeployKeyEnableDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	deployKeyID, err := strconv.Atoi(d.Get("key_id").(string))
 	if err != nil {

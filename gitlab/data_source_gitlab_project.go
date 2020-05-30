@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/xanzy/go-gitlab"
 )
 
 func dataSourceGitlabProject() *schema.Resource {
@@ -112,7 +111,8 @@ func dataSourceGitlabProject() *schema.Resource {
 }
 
 func dataSourceGitlabProjectRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	log.Printf("[INFO] Reading Gitlab project")
 

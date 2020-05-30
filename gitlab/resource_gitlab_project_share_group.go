@@ -43,7 +43,8 @@ func resourceGitlabProjectShareGroup() *schema.Resource {
 }
 
 func resourceGitlabProjectShareGroupCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	groupId := d.Get("group_id").(int)
 	projectId := d.Get("project_id").(string)
@@ -65,7 +66,8 @@ func resourceGitlabProjectShareGroupCreate(d *schema.ResourceData, meta interfac
 }
 
 func resourceGitlabProjectShareGroupRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	id := d.Id()
 	log.Printf("[DEBUG] read gitlab project projectMember %s", id)
 
@@ -105,7 +107,8 @@ func projectIdAndGroupIdFromId(id string) (string, int, error) {
 }
 
 func resourceGitlabProjectShareGroupUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	groupId := d.Get("group_id").(int)
 	projectId := d.Get("project_id").(string)
@@ -125,7 +128,8 @@ func resourceGitlabProjectShareGroupUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceGitlabProjectShareGroupDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	id := d.Id()
 	projectId, groupId, err := projectIdAndGroupIdFromId(id)

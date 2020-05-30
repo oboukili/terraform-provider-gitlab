@@ -41,7 +41,8 @@ func resourceGitlabPipelineScheduleVariable() *schema.Resource {
 }
 
 func resourceGitlabPipelineScheduleVariableCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	scheduleID := d.Get("pipeline_schedule_id").(int)
 
@@ -64,7 +65,8 @@ func resourceGitlabPipelineScheduleVariableCreate(d *schema.ResourceData, meta i
 }
 
 func resourceGitlabPipelineScheduleVariableRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	scheduleID := d.Get("pipeline_schedule_id").(int)
 	pipelineVariableKey := d.Get("key").(string)
@@ -88,14 +90,16 @@ func resourceGitlabPipelineScheduleVariableRead(d *schema.ResourceData, meta int
 		}
 	}
 	if !found {
-		return fmt.Errorf("PipelineScheduleVariable %s can not be found", pipelineVariableKey)
+		log.Printf("[DEBUG] pipeline schedule variable not found %s/%d/%s", project, scheduleID, pipelineVariableKey)
+		d.SetId("")
 	}
 
 	return nil
 }
 
 func resourceGitlabPipelineScheduleVariableUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	variableKey := d.Get("key").(string)
 	scheduleID := d.Get("pipeline_schedule_id").(int)
@@ -117,7 +121,8 @@ func resourceGitlabPipelineScheduleVariableUpdate(d *schema.ResourceData, meta i
 }
 
 func resourceGitlabPipelineScheduleVariableDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	variableKey := d.Get("key").(string)
 	scheduleID := d.Get("pipeline_schedule_id").(int)

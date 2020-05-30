@@ -45,7 +45,8 @@ func resourceGitlabBranchProtection() *schema.Resource {
 }
 
 func resourceGitlabBranchProtectionCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	branch := gitlab.String(d.Get("branch").(string))
 	mergeAccessLevel := accessLevelID[d.Get("merge_access_level").(string)]
@@ -79,7 +80,8 @@ func resourceGitlabBranchProtectionCreate(d *schema.ResourceData, meta interface
 }
 
 func resourceGitlabBranchProtectionRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project, branch, err := projectAndBranchFromID(d.Id())
 	if err != nil {
 		return err
@@ -105,7 +107,8 @@ func resourceGitlabBranchProtectionRead(d *schema.ResourceData, meta interface{}
 }
 
 func resourceGitlabBranchProtectionDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	branch := d.Get("branch").(string)
 

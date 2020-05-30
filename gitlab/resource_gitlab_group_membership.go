@@ -49,7 +49,8 @@ func resourceGitlabGroupMembership() *schema.Resource {
 }
 
 func resourceGitlabGroupMembershipCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	userId := d.Get("user_id").(int)
 	groupId := d.Get("group_id").(string)
@@ -73,7 +74,8 @@ func resourceGitlabGroupMembershipCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabGroupMembershipRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	id := d.Id()
 	log.Printf("[DEBUG] read gitlab group groupMember %s", id)
 
@@ -84,6 +86,11 @@ func resourceGitlabGroupMembershipRead(d *schema.ResourceData, meta interface{})
 
 	groupMember, _, err := client.GroupMembers.GetGroupMember(groupId, userId)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab group member not found %s/%d", groupId, userId)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -104,7 +111,8 @@ func groupIdAndUserIdFromId(id string) (string, int, error) {
 }
 
 func resourceGitlabGroupMembershipUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	userId := d.Get("user_id").(int)
 	groupId := d.Get("group_id").(string)
@@ -126,7 +134,8 @@ func resourceGitlabGroupMembershipUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabGroupMembershipDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	id := d.Id()
 	groupId, userId, e := groupIdAndUserIdFromId(id)

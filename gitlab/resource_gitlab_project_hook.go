@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -80,7 +81,8 @@ func resourceGitlabProjectHook() *schema.Resource {
 }
 
 func resourceGitlabProjectHookCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.AddProjectHookOptions{
 		URL:                   gitlab.String(d.Get("url").(string)),
@@ -112,7 +114,8 @@ func resourceGitlabProjectHookCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabProjectHookRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	hookId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -122,6 +125,11 @@ func resourceGitlabProjectHookRead(d *schema.ResourceData, meta interface{}) err
 
 	hook, _, err := client.Projects.GetProjectHook(project, hookId)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab project hook not found %s/%d", project, hookId)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -139,7 +147,8 @@ func resourceGitlabProjectHookRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceGitlabProjectHookUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	hookId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -173,7 +182,8 @@ func resourceGitlabProjectHookUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceGitlabProjectHookDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	hookId, err := strconv.Atoi(d.Id())
 	if err != nil {

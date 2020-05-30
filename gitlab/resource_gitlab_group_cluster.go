@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -92,7 +93,8 @@ func resourceGitlabGroupCluster() *schema.Resource {
 }
 
 func resourceGitlabGroupClusterCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group := d.Get("group").(string)
 
 	pk := gitlab.AddGroupPlatformKubernetesOptions{
@@ -138,7 +140,8 @@ func resourceGitlabGroupClusterCreate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceGitlabGroupClusterRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	group, clusterId, err := groupIdAndClusterIdFromId(d.Id())
 	if err != nil {
@@ -149,6 +152,11 @@ func resourceGitlabGroupClusterRead(d *schema.ResourceData, meta interface{}) er
 
 	cluster, _, err := client.GroupCluster.GetCluster(group, clusterId)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab group cluster not found %s/%d", group, clusterId)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -169,7 +177,8 @@ func resourceGitlabGroupClusterRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceGitlabGroupClusterUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	group, clusterId, err := groupIdAndClusterIdFromId(d.Id())
 	if err != nil {
@@ -220,7 +229,8 @@ func resourceGitlabGroupClusterUpdate(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceGitlabGroupClusterDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	group, clusterId, err := groupIdAndClusterIdFromId(d.Id())
 	if err != nil {
 		return err

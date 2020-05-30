@@ -658,7 +658,8 @@ func dataSourceGitlabProjects() *schema.Resource {
 // CRUD methods
 
 func dataSourceGitlabProjectsRead(d *schema.ResourceData, meta interface{}) (err error) {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	var projectList []*gitlab.Project
 
 	// Permanent parameters

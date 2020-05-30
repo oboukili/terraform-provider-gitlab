@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -34,7 +35,8 @@ func resourceGitlabPipelineTrigger() *schema.Resource {
 }
 
 func resourceGitlabPipelineTriggerCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.AddPipelineTriggerOptions{
 		Description: gitlab.String(d.Get("description").(string)),
@@ -53,7 +55,8 @@ func resourceGitlabPipelineTriggerCreate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabPipelineTriggerRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	pipelineTriggerID, err := strconv.Atoi(d.Id())
 
@@ -65,6 +68,11 @@ func resourceGitlabPipelineTriggerRead(d *schema.ResourceData, meta interface{})
 
 	pipelineTrigger, _, err := client.PipelineTriggers.GetPipelineTrigger(project, pipelineTriggerID)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab pipeline trigger not found %s/%d", project, pipelineTriggerID)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -75,7 +83,8 @@ func resourceGitlabPipelineTriggerRead(d *schema.ResourceData, meta interface{})
 }
 
 func resourceGitlabPipelineTriggerUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.EditPipelineTriggerOptions{
 		Description: gitlab.String(d.Get("description").(string)),
@@ -102,7 +111,8 @@ func resourceGitlabPipelineTriggerUpdate(d *schema.ResourceData, meta interface{
 }
 
 func resourceGitlabPipelineTriggerDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	log.Printf("[DEBUG] Delete gitlab PipelineTrigger %s", d.Id())
 

@@ -37,7 +37,8 @@ func resourceGitlabLabel() *schema.Resource {
 }
 
 func resourceGitlabLabelCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.CreateLabelOptions{
 		Name:  gitlab.String(d.Get("name").(string)),
@@ -61,7 +62,8 @@ func resourceGitlabLabelCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabLabelRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	labelName := d.Id()
 	log.Printf("[DEBUG] read gitlab label %s/%s", project, labelName)
@@ -91,7 +93,8 @@ func resourceGitlabLabelRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabLabelUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	options := &gitlab.UpdateLabelOptions{
 		Name:  gitlab.String(d.Get("name").(string)),
@@ -113,7 +116,8 @@ func resourceGitlabLabelUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabLabelDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	project := d.Get("project").(string)
 	log.Printf("[DEBUG] Delete gitlab label %s", d.Id())
 	options := &gitlab.DeleteLabelOptions{

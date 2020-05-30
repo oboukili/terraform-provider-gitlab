@@ -46,7 +46,8 @@ func resourceGitlabProjectMembership() *schema.Resource {
 }
 
 func resourceGitlabProjectMembershipCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	userId := d.Get("user_id").(int)
 	projectId := d.Get("project_id").(string)
@@ -68,7 +69,8 @@ func resourceGitlabProjectMembershipCreate(d *schema.ResourceData, meta interfac
 }
 
 func resourceGitlabProjectMembershipRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	id := d.Id()
 	log.Printf("[DEBUG] read gitlab project projectMember %s", id)
 
@@ -79,6 +81,11 @@ func resourceGitlabProjectMembershipRead(d *schema.ResourceData, meta interface{
 
 	projectMember, _, err := client.ProjectMembers.GetProjectMember(projectId, userId)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab project membership not found %s/%d", projectId, userId)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -99,7 +106,8 @@ func projectIdAndUserIdFromId(id string) (string, int, error) {
 }
 
 func resourceGitlabProjectMembershipUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	userId := d.Get("user_id").(int)
 	projectId := d.Get("project_id").(string)
@@ -118,7 +126,8 @@ func resourceGitlabProjectMembershipUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceGitlabProjectMembershipDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	id := d.Id()
 	projectId, userId, e := projectIdAndUserIdFromId(id)

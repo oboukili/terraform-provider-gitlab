@@ -2,11 +2,21 @@ package gitlab
 
 import (
 	"fmt"
+	"github.com/xanzy/go-gitlab"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
+
+type ProviderFlags struct {
+	FailFast bool
+}
+
+type ProviderInterface struct {
+	Client *gitlab.Client
+	Flags  ProviderFlags
+}
 
 // Provider returns a terraform.ResourceProvider.
 func Provider() terraform.ResourceProvider {
@@ -50,6 +60,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Default:     "",
 				Description: descriptions["client_key"],
+			},
+			"fail_fast": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: descriptions["fail_fast"],
 			},
 		},
 
@@ -107,6 +123,8 @@ func init() {
 		"client_cert": "File path to client certificate when GitLab instance is behind company proxy. File  must contain PEM encoded data.",
 
 		"client_key": "File path to client key when GitLab instance is behind company proxy. File must contain PEM encoded data.",
+
+		"fail_fast": "If false, enables the automatic deletion of resources within the Terraform state if the aforementioned managed resources where deleted in an out-of-band fashion, through the UI for example. NOTE that failing to provide a token with the appropriate permissions to access the resources WILL delete the resources from Terraform state, as Gitlab will try and preserve the resource anonymity from unauthorized users by returning a 'not found' response. In case of such a mistake, the resources will have to be re-imported. Use with caution. Defaults to true.",
 	}
 }
 
@@ -120,7 +138,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientKey:  d.Get("client_key").(string),
 	}
 
-	return config.Client()
+	client, err := config.Client()
+	return ProviderInterface{
+		client.(*gitlab.Client),
+		ProviderFlags{
+			FailFast: true,
+		},
+	}, err
 }
 
 func validateApiURLVersion(value interface{}, key string) (ws []string, es []error) {

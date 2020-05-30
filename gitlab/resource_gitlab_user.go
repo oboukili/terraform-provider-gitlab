@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	gitlab "github.com/xanzy/go-gitlab"
@@ -79,7 +80,8 @@ func resourceGitlabUserSetToState(d *schema.ResourceData, user *gitlab.User) {
 }
 
 func resourceGitlabUserCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	options := &gitlab.CreateUserOptions{
 		Email:            gitlab.String(d.Get("email").(string)),
 		Password:         gitlab.String(d.Get("password").(string)),
@@ -108,13 +110,19 @@ func resourceGitlabUserCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabUserRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	log.Printf("[DEBUG] read gitlab user %s", d.Id())
 
 	id, _ := strconv.Atoi(d.Id())
 
 	user, _, err := client.Users.GetUser(id)
 	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") && m.Flags.FailFast {
+			log.Printf("[DEBUG] gitlab user not found %d", id)
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -123,7 +131,8 @@ func resourceGitlabUserRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabUserUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 
 	options := &gitlab.ModifyUserOptions{}
 
@@ -164,7 +173,8 @@ func resourceGitlabUserUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceGitlabUserDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*gitlab.Client)
+	m := meta.(ProviderInterface)
+	client := m.Client
 	log.Printf("[DEBUG] Delete gitlab user %s", d.Id())
 
 	id, _ := strconv.Atoi(d.Id())
